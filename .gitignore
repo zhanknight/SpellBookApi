@@ -3,6 +3,9 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# ignore SQLite DB file
+SpellBook.db
+
 # dotenv files
 .env
 
