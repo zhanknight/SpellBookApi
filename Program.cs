@@ -10,7 +10,27 @@ builder.Services.AddDbContext<SpellBookContext>(options =>
 
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+// Map the endpoints
+
+app.MapGet("/spells", async (SpellBookContext context) =>
+{ 
+    return await context.Spells.ToListAsync(); 
+});
+
+app.MapGet("/reagents", async (SpellBookContext context) =>
+{
+    return await context.Reagents.ToListAsync();
+});
+
+app.MapGet("/spells/{spellId:Guid}", async (Guid spellId, SpellBookContext context) =>
+{
+    return await context.Spells.FindAsync(spellId);
+});
+
+app.MapGet("/reagents/{reagentId:Guid}", async (Guid reagentId, SpellBookContext context) =>
+{
+    return await context.Reagents.FindAsync(reagentId);
+});
 
 app.UseHttpsRedirection();
 
@@ -22,4 +42,4 @@ using (var scope = app.Services.GetService<IServiceScopeFactory>().CreateScope()
     content.Database.Migrate();
 }
 
-    app.Run();
+app.Run();
