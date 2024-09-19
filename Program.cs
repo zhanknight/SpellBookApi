@@ -1,5 +1,8 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SpellBookApi.Contexts;
+using SpellBookApi.Models;
+using System.Reflection.Metadata.Ecma335;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,22 +17,31 @@ var app = builder.Build();
 
 app.MapGet("/spells", async (SpellBookContext context) =>
 { 
-    return await context.Spells.ToListAsync(); 
+    var results = await context.Spells
+    .Include(r => r.Reagents)
+    .ToListAsync(); 
+    return results.Select(s => s.ToView()).ToList();
 });
 
 app.MapGet("/reagents", async (SpellBookContext context) =>
 {
-    return await context.Reagents.ToListAsync();
+    var results = await context.Reagents.ToListAsync();
+    return results.Select(r => r.ToView()).ToList();
 });
 
 app.MapGet("/spells/{spellId:Guid}", async (Guid spellId, SpellBookContext context) =>
 {
-    return await context.Spells.FindAsync(spellId);
+    var result = await context.Spells
+    .Include(r => r.Reagents)
+    .FirstOrDefaultAsync(i => i.Id == spellId);
+    return result.ToView();
+
 });
 
 app.MapGet("/reagents/{reagentId:Guid}", async (Guid reagentId, SpellBookContext context) =>
 {
-    return await context.Reagents.FindAsync(reagentId);
+    var result = await context.Reagents.FindAsync(reagentId);
+    return result.ToView();
 });
 
 app.UseHttpsRedirection();

@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SpellBookApi.Entities;
+using SpellBookApi.Models.Entities;
 
 namespace SpellBookApi.Contexts;
 

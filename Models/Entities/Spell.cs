@@ -1,10 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 
-namespace SpellBookApi.Entities;
+namespace SpellBookApi.Models.Entities;
 
-public class Reagent
+public class Spell
 {
+
     [Key]
     public Guid Id { get; set; }
 
@@ -12,15 +13,17 @@ public class Reagent
     [MaxLength(200)]
     public required string Name { get; set; }
 
-    public ICollection<Spell> Spells { get; set; } = new List<Spell>();
+    public ICollection<Reagent> Reagents { get; set; } = new List<Reagent>();
 
-    public Reagent()
-    { }
+    public Spell()
+    {
+    }
 
     [SetsRequiredMembers]
-    public Reagent(Guid id, string name)
+    public Spell(Guid id, string name)
     {
         Id = id;
         Name = name;
     }
+
 }
