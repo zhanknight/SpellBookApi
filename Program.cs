@@ -1,8 +1,9 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SpellBookApi.Contexts;
 using SpellBookApi.Models;
-using System.Reflection.Metadata.Ecma335;
+using SpellBookApi.Models.Views;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,33 +16,50 @@ var app = builder.Build();
 
 // Map the endpoints
 
-app.MapGet("/spells", async (SpellBookContext context) =>
+app.MapGet("/spells", async Task<Ok<IEnumerable<SpellView>>> 
+    (SpellBookContext context) =>
 { 
     var results = await context.Spells
     .Include(r => r.Reagents)
-    .ToListAsync(); 
-    return results.Select(s => s.ToView()).ToList();
+    .ToListAsync();
+
+    return TypedResults.Ok<IEnumerable<SpellView>>(results.Select(s => s.ToView()).ToList());
 });
 
-app.MapGet("/reagents", async (SpellBookContext context) =>
+app.MapGet("/reagents", async Task<Ok<IEnumerable<ReagentView>>> 
+    (SpellBookContext context) =>
 {
     var results = await context.Reagents.ToListAsync();
-    return results.Select(r => r.ToView()).ToList();
+
+    return TypedResults.Ok<IEnumerable<ReagentView>>(results.Select(r => r.ToView()).ToList());
 });
 
-app.MapGet("/spells/{spellId:Guid}", async (Guid spellId, SpellBookContext context) =>
+app.MapGet("/spells/{spellId:Guid}", async Task<Results<NotFound, Ok<SpellView>>> 
+    ([FromRoute] Guid spellId, SpellBookContext context) =>
 {
     var result = await context.Spells
     .Include(r => r.Reagents)
     .FirstOrDefaultAsync(i => i.Id == spellId);
-    return result.ToView();
 
+    if (result == null)
+    {
+        return TypedResults.NotFound();
+    }
+
+    return TypedResults.Ok<SpellView>( result.ToView());
 });
 
-app.MapGet("/reagents/{reagentId:Guid}", async (Guid reagentId, SpellBookContext context) =>
+app.MapGet("/reagents/{reagentId:Guid}", async Task<Results<NotFound, Ok<ReagentView>>> 
+    ([FromRoute] Guid reagentId, SpellBookContext context) =>
 {
     var result = await context.Reagents.FindAsync(reagentId);
-    return result.ToView();
+
+    if (result == null)
+    {
+        return TypedResults.NotFound();
+    }
+
+    return TypedResults.Ok<ReagentView>(result.ToView());
 });
 
 app.UseHttpsRedirection();
