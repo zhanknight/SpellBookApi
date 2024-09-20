@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using SpellBookApi.Contexts;
 using SpellBookApi.Models;
 using SpellBookApi.Models.Creates;
-using SpellBookApi.Models.Entities;
 using SpellBookApi.Models.Views;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,10 +15,13 @@ builder.Services.AddDbContext<SpellBookContext>(options =>
 
 var app = builder.Build();
 
+RouteGroupBuilder spellsEndpoints = app.MapGroup("/spells");
+RouteGroupBuilder reagentsEndpoints = app.MapGroup("/reagents");
+
 // Map the GET endpoints
 #region GetEndpoints
 
-app.MapGet("/spells", async Task<Ok<IEnumerable<SpellView>>> 
+spellsEndpoints.MapGet("", async Task<Ok<IEnumerable<SpellView>>> 
     (SpellBookContext context) =>
 { 
     var results = await context.Spells
@@ -29,7 +31,7 @@ app.MapGet("/spells", async Task<Ok<IEnumerable<SpellView>>>
     return TypedResults.Ok<IEnumerable<SpellView>>(results.Select(s => s.ToView()).ToList());
 });
 
-app.MapGet("/reagents", async Task<Ok<IEnumerable<ReagentView>>> 
+reagentsEndpoints.MapGet("", async Task<Ok<IEnumerable<ReagentView>>> 
     (SpellBookContext context) =>
 {
     var results = await context.Reagents.ToListAsync();
@@ -37,7 +39,7 @@ app.MapGet("/reagents", async Task<Ok<IEnumerable<ReagentView>>>
     return TypedResults.Ok<IEnumerable<ReagentView>>(results.Select(r => r.ToView()).ToList());
 });
 
-app.MapGet("/spells/{spellId:Guid}", async Task<Results<NotFound, Ok<SpellView>>> 
+spellsEndpoints.MapGet("/{spellId:Guid}", async Task<Results<NotFound, Ok<SpellView>>> 
     ([FromRoute] Guid spellId, SpellBookContext context) =>
 {
     var result = await context.Spells
@@ -52,7 +54,7 @@ app.MapGet("/spells/{spellId:Guid}", async Task<Results<NotFound, Ok<SpellView>>
     return TypedResults.Ok<SpellView>( result.ToView());
 }).WithName("GetSpell");
 
-app.MapGet("/reagents/{reagentId:Guid}", async Task<Results<NotFound, Ok<ReagentView>>> 
+reagentsEndpoints.MapGet("/{reagentId:Guid}", async Task<Results<NotFound, Ok<ReagentView>>> 
     ([FromRoute] Guid reagentId, SpellBookContext context) =>
 {
     var result = await context.Reagents.FindAsync(reagentId);
@@ -68,7 +70,7 @@ app.MapGet("/reagents/{reagentId:Guid}", async Task<Results<NotFound, Ok<Reagent
 
 // Map the POST endpoints
 #region PostEndpoints
-app.MapPost("/reagents", async Task<CreatedAtRoute<ReagentView>>
+reagentsEndpoints.MapPost("", async Task<CreatedAtRoute<ReagentView>>
     ([FromBody] ReagentCreate newReagent, SpellBookContext context) =>
 {
     var x = context.Add(newReagent.ToEntity());
@@ -78,7 +80,7 @@ app.MapPost("/reagents", async Task<CreatedAtRoute<ReagentView>>
     return TypedResults.CreatedAtRoute<ReagentView>(x.Entity.ToView(),"GetReagent", new {reagentId = x.Entity.Id});
 });
 
-app.MapPost("/spells", async Task<CreatedAtRoute<SpellView>> 
+spellsEndpoints.MapPost("", async Task<CreatedAtRoute<SpellView>> 
     ([FromBody] SpellCreate newSpell, SpellBookContext context) =>
 {
     var x = context.Add(newSpell.ToEntity());
@@ -100,7 +102,7 @@ app.MapPost("/spells", async Task<CreatedAtRoute<SpellView>>
 
 // Map the PUT endpoints
 #region PutEndpoints
-app.MapPut("/spells/{spellId:Guid}", async Task<Results<NotFound, NoContent>>
+spellsEndpoints.MapPut("/{spellId:Guid}", async Task<Results<NotFound, NoContent>>
     ([FromRoute] Guid spellId, [FromBody] SpellCreate updatedSpell, SpellBookContext context) =>
 {
     var spellExists = await context.Spells
@@ -128,7 +130,7 @@ app.MapPut("/spells/{spellId:Guid}", async Task<Results<NotFound, NoContent>>
     return TypedResults.NoContent();
 });
 
-app.MapPut("/reagents/{reagentId:Guid}", async Task<Results<NotFound, NoContent>>
+reagentsEndpoints.MapPut("/{reagentId:Guid}", async Task<Results<NotFound, NoContent>>
     ([FromRoute] Guid reagentId, [FromBody] ReagentCreate updatedReagent, SpellBookContext context) =>
 {
     var reagentExists = await context.Reagents.FindAsync(reagentId);
@@ -147,7 +149,7 @@ app.MapPut("/reagents/{reagentId:Guid}", async Task<Results<NotFound, NoContent>
 // Map the DELETE endpoints
 #region DeleteEndpoints
 
-app.MapDelete("/spells/{spellId:Guid}", async Task<Results<NotFound, NoContent>>
+spellsEndpoints.MapDelete("/{spellId:Guid}", async Task<Results<NotFound, NoContent>>
     ([FromRoute] Guid spellId, SpellBookContext context) =>
 {
     var spell = await context.Spells.FindAsync(spellId);
@@ -162,7 +164,7 @@ app.MapDelete("/spells/{spellId:Guid}", async Task<Results<NotFound, NoContent>>
     return TypedResults.NoContent();
 });
 
-app.MapDelete("/reagents/{reagentId:Guid}", async Task<Results<NotFound, NoContent>>
+reagentsEndpoints.MapDelete("/{reagentId:Guid}", async Task<Results<NotFound, NoContent>>
     ([FromRoute] Guid reagentId, SpellBookContext context) =>
 {
 
