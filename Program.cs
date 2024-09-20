@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SpellBookApi.Contexts;
 using SpellBookApi.Models;
 using SpellBookApi.Models.Creates;
+using SpellBookApi.Models.Entities;
 using SpellBookApi.Models.Views;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -96,6 +97,92 @@ app.MapPost("/spells", async Task<CreatedAtRoute<SpellView>>
     return TypedResults.CreatedAtRoute<SpellView>(x.Entity.ToView(), "GetSpell", new { SpellId = x.Entity.Id });
 });
 #endregion PostEndpoints
+
+// Map the PUT endpoints
+#region PutEndpoints
+app.MapPut("/spells/{spellId:Guid}", async Task<Results<NotFound, NoContent>>
+    ([FromRoute] Guid spellId, [FromBody] SpellCreate updatedSpell, SpellBookContext context) =>
+{
+    var spellExists = await context.Spells
+    .Include(r => r.Reagents)
+    .FirstOrDefaultAsync(i => i.Id == spellId);
+
+    if (spellExists == null)
+    {
+        return TypedResults.NotFound();
+    }
+
+    spellExists.Reagents.Clear();
+    foreach (var r in updatedSpell.Reagents)
+    {
+        var reagent = await context.Reagents.FindAsync(r);
+        if (reagent != null)
+        {
+            spellExists.Reagents.Add(reagent);
+        }
+    }
+    spellExists.Name = updatedSpell.Name;
+
+    await context.SaveChangesAsync();
+
+    return TypedResults.NoContent();
+});
+
+app.MapPut("/reagents/{reagentId:Guid}", async Task<Results<NotFound, NoContent>>
+    ([FromRoute] Guid reagentId, [FromBody] ReagentCreate updatedReagent, SpellBookContext context) =>
+{
+    var reagentExists = await context.Reagents.FindAsync(reagentId);
+    if (reagentExists == null)
+    {
+        return TypedResults.NotFound();
+    }
+
+    reagentExists.Name = updatedReagent.Name;
+    await context.SaveChangesAsync();
+
+    return TypedResults.NoContent();
+});
+#endregion PutEndpoints
+
+// Map the DELETE endpoints
+#region DeleteEndpoints
+
+app.MapDelete("/spells/{spellId:Guid}", async Task<Results<NotFound, NoContent>>
+    ([FromRoute] Guid spellId, SpellBookContext context) =>
+{
+    var spell = await context.Spells.FindAsync(spellId);
+    if (spell == null)
+    {
+        return TypedResults.NotFound();
+    }
+
+    context.Remove(spell);
+    await context.SaveChangesAsync();
+
+    return TypedResults.NoContent();
+});
+
+app.MapDelete("/reagents/{reagentId:Guid}", async Task<Results<NotFound, NoContent>>
+    ([FromRoute] Guid reagentId, SpellBookContext context) =>
+{
+
+    // Could potentially refuse to delete if any existing spells use this reagent
+    // context.Spells.Where(s => s.Reagents.Any(r => r.Id == reagentId)).ToList();
+    // if that's not an empty list, send a bad request response 
+
+    var reagent = await context.Reagents.FindAsync(reagentId);
+    if (reagent == null)
+    {
+        return TypedResults.NotFound();
+    }
+
+    context.Remove(reagent);
+    await context.SaveChangesAsync();
+
+    return TypedResults.NoContent();
+});
+
+#endregion DeleteEndpoints
 
 app.UseHttpsRedirection();
 
