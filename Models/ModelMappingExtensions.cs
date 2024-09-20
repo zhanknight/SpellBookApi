@@ -1,10 +1,13 @@
 ﻿using SpellBookApi.Models.Entities;
 using SpellBookApi.Models.Views;
+using SpellBookApi.Models.Creates;
 
 namespace SpellBookApi.Models;
 
 public static class ModelMappingExtensions
 {
+
+    // Entities to Views
 
     public static SpellView ToView(this Spell spell)
     {
@@ -25,4 +28,24 @@ public static class ModelMappingExtensions
             Id = reagent.Id,
         };
     }
+
+    // Creates to Entities
+
+    public static Spell ToEntity(this SpellCreate spell)
+    {
+        return new Spell
+        {
+            Name = spell.Name,
+            Reagents = new List<Reagent>()
+        };
+    }
+
+    public static Reagent ToEntity(this ReagentCreate reagent)
+    {
+        return new Reagent
+        {
+            Name = reagent.Name
+        };
+    }
+
 }
