@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SpellBookApi.Contexts;
 using SpellBookApi.Models;
 using SpellBookApi.Models.Creates;
+using SpellBookApi.Models.Entities;
 using SpellBookApi.Models.Views;
 
 namespace SpellBookApi.RouteHandlers;
@@ -56,7 +58,7 @@ public static class SpellsRouteHandlers
     }
 
     public static async Task<Results<NotFound, NoContent>> UpdateSpell
-        ([FromRoute] Guid spellId, [FromBody] SpellCreate updatedSpell, SpellBookContext context)
+        ([FromRoute] Guid spellId, [FromBody] SpellCreate updatedSpell, SpellBookContext context, ILogger<Spell> logger)
     {
         var spellExists = await context.Spells
         .Include(r => r.Reagents)
@@ -80,11 +82,13 @@ public static class SpellsRouteHandlers
 
         await context.SaveChangesAsync();
 
+        logger.LogWarning("Spell {spellId} was modified", spellId);
+
         return TypedResults.NoContent();
     }
 
     public static async Task<Results<NotFound, NoContent>> DeleteSpell
-        ([FromRoute] Guid spellId, SpellBookContext context)
+        ([FromRoute] Guid spellId, SpellBookContext context, ILogger<Spell> logger)
     {
         var spell = await context.Spells.FindAsync(spellId);
         if (spell == null)
@@ -94,6 +98,8 @@ public static class SpellsRouteHandlers
 
         context.Remove(spell);
         await context.SaveChangesAsync();
+
+        logger.LogWarning("Spell {spellId} was deleted", spellId);
 
         return TypedResults.NoContent();
     }

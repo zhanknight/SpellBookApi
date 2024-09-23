@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SpellBookApi.Contexts;
 using SpellBookApi.Models;
 using SpellBookApi.Models.Creates;
+using SpellBookApi.Models.Entities;
 using SpellBookApi.Models.Views;
 
 namespace SpellBookApi.RouteHandlers;
@@ -43,7 +44,7 @@ public class ReagentsRouteHandlers
     }
 
     public static async Task<Results<NotFound, NoContent>> UpdateReagent
-        ([FromRoute] Guid reagentId, [FromBody] ReagentCreate updatedReagent, SpellBookContext context)
+        ([FromRoute] Guid reagentId, [FromBody] ReagentCreate updatedReagent, SpellBookContext context, ILogger<Reagent> logger)
     {
         var reagentExists = await context.Reagents.FindAsync(reagentId);
         if (reagentExists == null)
@@ -54,11 +55,13 @@ public class ReagentsRouteHandlers
         reagentExists.Name = updatedReagent.Name;
         await context.SaveChangesAsync();
 
+        logger.LogWarning("Reagent {reagentId} was modified", reagentId);
+
         return TypedResults.NoContent();
     }
 
     public static async Task<Results<NotFound, NoContent>> DeleteReagent
-        ([FromRoute] Guid reagentId, SpellBookContext context)
+        ([FromRoute] Guid reagentId, SpellBookContext context, ILogger<Reagent> logger)
     {
 
         // Could potentially refuse to delete if any existing spells use this reagent
@@ -73,6 +76,8 @@ public class ReagentsRouteHandlers
 
         context.Remove(reagent);
         await context.SaveChangesAsync();
+
+        logger.LogWarning("Reagent {reagentId} was deleted", reagentId);
 
         return TypedResults.NoContent();
     }
