@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using SpellBookApi.Contexts;
 using SpellBookApi.RouteHandlers;
 
@@ -10,14 +12,44 @@ builder.Services.AddDbContext<SpellBookContext>(options =>
 });
 
 builder.Services.AddProblemDetails();
-
-builder.Services.AddAuthentication().AddJwtBearer();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(x => 
+    { 
+        x.Authority = "https://localhost"; 
+        x.Audience = "SpellBookApi";
+    });
 builder.Services.AddAuthorization();
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("RequireAdmin", policy => policy.RequireRole("admin"));
+    .AddPolicy("RequireAdmin", policy => policy.RequireRole("admin"))
+    .AddPolicy("RequireCreate", policy => policy.RequireClaim("permission", "create"));
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(o =>
+{
+    o.AddSecurityDefinition("jwt",
+        new()
+        {
+            Name = "Authorization",
+            Description = "JWT Bearer Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "Bearer",
+            In = ParameterLocation.Header
+        });
+    o.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "jwt"
+                    }
+                },
+                new string[] { }
+            }
+        });
+});
 
 var app = builder.Build();
 
@@ -34,7 +66,7 @@ spellsEndpoints.MapGet("", SpellsRouteHandlers.GetSpells)
 spellsEndpoints.MapGet("/{spellId:Guid}", SpellsRouteHandlers.GetSpell)
     .WithName("GetSpell");
 spellsEndpoints.MapPost("", SpellsRouteHandlers.CreateSpell)
-    .RequireAuthorization("RequireAdmin");
+    .RequireAuthorization("RequireCreate");
 spellsEndpoints.MapPut("/{spellId:Guid}", SpellsRouteHandlers.UpdateSpell)
     .RequireAuthorization("RequireAdmin");
 spellsEndpoints.MapDelete("/{spellId:Guid}", SpellsRouteHandlers.DeleteSpell)
@@ -45,7 +77,7 @@ reagentsEndpoints.MapGet("", ReagentsRouteHandlers.GetReagents)
 reagentsEndpoints.MapGet("/{reagentId:Guid}", ReagentsRouteHandlers.GetReagent)
     .WithName("GetReagent");
 reagentsEndpoints.MapPost("", ReagentsRouteHandlers.CreateReagent)
-    .RequireAuthorization("RequireAdmin");
+    .RequireAuthorization("RequireCreate");
 reagentsEndpoints.MapPut("/{reagentId:Guid}", ReagentsRouteHandlers.UpdateReagent)
     .RequireAuthorization("RequireAdmin");
 reagentsEndpoints.MapDelete("/{reagentId:Guid}", ReagentsRouteHandlers.DeleteReagent)
