@@ -9,7 +9,14 @@ builder.Services.AddDbContext<SpellBookContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("SpellBook"));
 });
 
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler();
+}
 
 RouteGroupBuilder spellsEndpoints = app.MapGroup("/spells");
 RouteGroupBuilder reagentsEndpoints = app.MapGroup("/reagents");
