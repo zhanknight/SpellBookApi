@@ -16,6 +16,9 @@ builder.Services.AddAuthorization();
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RequireAdmin", policy => policy.RequireRole("admin"));
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -28,20 +31,30 @@ RouteGroupBuilder reagentsEndpoints = app.MapGroup("/reagents").RequireAuthoriza
 
 spellsEndpoints.MapGet("", SpellsRouteHandlers.GetSpells)
     .AllowAnonymous();
-spellsEndpoints.MapGet("/{spellId:Guid}", SpellsRouteHandlers.GetSpell).WithName("GetSpell");
+spellsEndpoints.MapGet("/{spellId:Guid}", SpellsRouteHandlers.GetSpell)
+    .WithName("GetSpell");
 spellsEndpoints.MapPost("", SpellsRouteHandlers.CreateSpell)
     .RequireAuthorization("RequireAdmin");
-spellsEndpoints.MapPut("/{spellId:Guid}", SpellsRouteHandlers.UpdateSpell);
-spellsEndpoints.MapDelete("/{spellId:Guid}", SpellsRouteHandlers.DeleteSpell);
+spellsEndpoints.MapPut("/{spellId:Guid}", SpellsRouteHandlers.UpdateSpell)
+    .RequireAuthorization("RequireAdmin");
+spellsEndpoints.MapDelete("/{spellId:Guid}", SpellsRouteHandlers.DeleteSpell)
+    .RequireAuthorization("RequireAdmin");
 
 reagentsEndpoints.MapGet("", ReagentsRouteHandlers.GetReagents)
     .AllowAnonymous();
-reagentsEndpoints.MapGet("/{reagentId:Guid}", ReagentsRouteHandlers.GetReagent).WithName("GetReagent");
-reagentsEndpoints.MapPost("", ReagentsRouteHandlers.CreateReagent);
-reagentsEndpoints.MapPut("/{reagentId:Guid}", ReagentsRouteHandlers.UpdateReagent);
-reagentsEndpoints.MapDelete("/{reagentId:Guid}", ReagentsRouteHandlers.DeleteReagent);
+reagentsEndpoints.MapGet("/{reagentId:Guid}", ReagentsRouteHandlers.GetReagent)
+    .WithName("GetReagent");
+reagentsEndpoints.MapPost("", ReagentsRouteHandlers.CreateReagent)
+    .RequireAuthorization("RequireAdmin");
+reagentsEndpoints.MapPut("/{reagentId:Guid}", ReagentsRouteHandlers.UpdateReagent)
+    .RequireAuthorization("RequireAdmin");
+reagentsEndpoints.MapDelete("/{reagentId:Guid}", ReagentsRouteHandlers.DeleteReagent)
+    .RequireAuthorization("RequireAdmin");
 
 app.UseHttpsRedirection();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseAuthentication();
 app.UseAuthorization();
